@@ -1,5 +1,9 @@
+import threading
+
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
 from PyQt6.QtCore import Qt
+
+from database import Database
 
 
 class MainWindow(QWidget):
@@ -8,11 +12,12 @@ class MainWindow(QWidget):
     def __init__(self, tray, parent=None):
         super().__init__(parent)
         self._tray = tray
+        self._popup_ref = []
         self._setup_ui()
 
     def _setup_ui(self):
         self.setWindowTitle("EasyTranslator")
-        self.setFixedSize(320, 220)
+        self.setFixedSize(320, 270)
 
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
@@ -42,10 +47,35 @@ class MainWindow(QWidget):
         settings_btn.clicked.connect(self._tray.show_settings)
         layout.addWidget(settings_btn)
 
+        test_btn = QPushButton("测试翻译弹窗")
+        test_btn.setStyleSheet(btn_style)
+        test_btn.clicked.connect(self._test_popup)
+        layout.addWidget(test_btn)
+
         hint = QLabel("选中文字后点击 Translate 按钮即可翻译")
         hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         hint.setStyleSheet("color: #888; font-size: 11px;")
         layout.addWidget(hint)
+
+    def _test_popup(self):
+        """Open a PopupWindow with hardcoded text — bypasses mouse selection for testing."""
+        from ui.popup import PopupWindow
+        test_text = "hello world"
+        print(f"[test] opening popup for: {test_text!r}")
+        popup = PopupWindow(test_text, self._tray.db)
+        self._popup_ref.clear()
+        self._popup_ref.append(popup)
+        popup.show()
+
+        def _do_translate():
+            try:
+                result = self._tray.translator.translate(test_text)
+            except Exception as e:
+                result = f"翻译失败：{e}"
+            print(f"[test] result: {result!r}")
+            popup.result_ready.emit(result)
+
+        threading.Thread(target=_do_translate, daemon=True).start()
 
     def closeEvent(self, event):
         event.ignore()

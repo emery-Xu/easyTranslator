@@ -21,7 +21,7 @@ class PopupWindow(QWidget):
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
-            | Qt.WindowType.Popup
+            | Qt.WindowType.Tool
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
@@ -116,6 +116,11 @@ class PopupWindow(QWidget):
         super().show()
         self.raise_()
         self.activateWindow()
+        self.setFocus()
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self.close()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:

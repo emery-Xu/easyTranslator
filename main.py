@@ -81,6 +81,7 @@ def main():
     def on_translate_requested(text: str):
         if not text:
             return
+        print(f"[translate] creating popup for: {text!r}")
         from ui.popup import PopupWindow
         popup = PopupWindow(text, db)
         _popup_ref.clear()
@@ -92,6 +93,7 @@ def main():
                 result = tray.translator.translate(text)
             except Exception as e:
                 result = f"翻译失败：{e}"
+            print(f"[translate] result: {result!r}")
             popup.result_ready.emit(result)
 
         threading.Thread(target=_do_translate, daemon=True).start()
@@ -106,42 +108,47 @@ def main():
 
     def _on_mouse_click(x, y, button, pressed):
         nonlocal _ignore_next_release
-        from pynput.mouse import Button as MButton
-        if button != MButton.left:
-            return
-        if pressed:
-            _press_pos["pos"] = (x, y)
-        else:
-            press = _press_pos.pop("pos", None)
-            if press is None:
+        try:
+            from pynput.mouse import Button as MButton
+            if button != MButton.left:
                 return
+            if pressed:
+                _press_pos["pos"] = (x, y)
+            else:
+                press = _press_pos.pop("pos", None)
+                if press is None:
+                    return
 
-            # If we should ignore this release (e.g. after clicking SelectionButton)
-            if _ignore_next_release:
-                _ignore_next_release = False
-                return
+                # If we should ignore this release (e.g. after clicking SelectionButton)
+                if _ignore_next_release:
+                    _ignore_next_release = False
+                    return
 
-            # Check if the SelectionButton is visible and the click landed on it
-            if sel_btn.isVisible():
-                btn_geo = sel_btn.geometry()
-                if btn_geo.contains(x, y):
+                # Check if the SelectionButton is visible and the click landed on it
+                # Use thread-safe state instead of Qt calls
+                visible, (bx, by, bw, bh) = sel_btn.get_thread_safe_state()
+                if visible and bx <= x <= bx + bw and by <= y <= by + bh:
                     _ignore_next_release = True
                     return
 
-            # Only treat as drag-select if moved more than threshold
-            dx = x - press[0]
-            dy = y - press[1]
-            if (dx * dx + dy * dy) < _MIN_DRAG_DISTANCE * _MIN_DRAG_DISTANCE:
-                return
+                # Only treat as drag-select if moved more than threshold
+                dx = x - press[0]
+                dy = y - press[1]
+                if (dx * dx + dy * dy) < _MIN_DRAG_DISTANCE * _MIN_DRAG_DISTANCE:
+                    return
 
-            pos_x, pos_y = x, y
+                print(f"[sel] drag detected at ({x}, {y}), distance={((dx*dx+dy*dy)**0.5):.0f}")
+                pos_x, pos_y = x, y
 
-            def _worker():
-                text = _get_selected_text_via_clipboard()
-                if text:
-                    sel_btn.request_show.emit(text, QPoint(pos_x, pos_y))
+                def _worker():
+                    text = _get_selected_text_via_clipboard()
+                    print(f"[sel] text captured: {text!r}")
+                    if text:
+                        sel_btn.request_show.emit(text, QPoint(pos_x, pos_y))
 
-            threading.Thread(target=_worker, daemon=True).start()
+                threading.Thread(target=_worker, daemon=True).start()
+        except Exception as e:
+            print(f"[pynput] error in _on_mouse_click: {e}", flush=True)
 
     from pynput.mouse import Listener as MouseListener
     mouse_listener = MouseListener(on_click=_on_mouse_click)
