@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QFrame
 from PyQt6.QtCore import Qt, QPoint
-from PyQt6.QtGui import QCursor, QScreen
+from PyQt6.QtGui import QCursor
 
 from database import Database
 
@@ -88,7 +88,7 @@ class PopupWindow(QWidget):
 
     def _position_near_cursor(self):
         pos = QCursor.pos()
-        screen = QScreen.virtualSiblingAt(pos) or self.screen()
+        screen = self.screen()
         if screen:
             geo = screen.availableGeometry()
             x = min(pos.x() + 10, geo.right() - self.sizeHint().width() - 10)
