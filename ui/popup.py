@@ -1,18 +1,21 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QFrame
-from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtCore import Qt, QPoint, pyqtSignal
 from PyQt6.QtGui import QCursor
 
 from database import Database
 
 
 class PopupWindow(QWidget):
-    def __init__(self, source: str, target: str, db: Database):
+    # Emitted from background thread when translation is ready
+    result_ready = pyqtSignal(str)
+
+    def __init__(self, source: str, db: Database):
         super().__init__()
         self.source = source
-        self.target = target
         self.db = db
         self._setup_ui()
         self._position_near_cursor()
+        self.result_ready.connect(self._apply_result)
 
     def _setup_ui(self):
         self.setWindowFlags(
@@ -74,13 +77,14 @@ class PopupWindow(QWidget):
         line.setStyleSheet("color: #555555;")
         layout.addWidget(line)
 
-        target_label = QLabel(self.target)
-        target_label.setObjectName("target_label")
-        target_label.setWordWrap(True)
-        layout.addWidget(target_label)
+        self._target_label = QLabel("翻译中…")
+        self._target_label.setObjectName("target_label")
+        self._target_label.setWordWrap(True)
+        layout.addWidget(self._target_label)
 
         self.save_btn = QPushButton("保存到词库")
         self.save_btn.setObjectName("save_btn")
+        self.save_btn.setEnabled(False)
         self.save_btn.clicked.connect(self._save_word)
         layout.addWidget(self.save_btn)
 
@@ -97,8 +101,14 @@ class PopupWindow(QWidget):
         else:
             self.move(pos.x() + 10, pos.y() + 10)
 
+    def _apply_result(self, text: str):
+        self._target_label.setText(text)
+        self._result = text
+        self.save_btn.setEnabled(True)
+        self.adjustSize()
+
     def _save_word(self):
-        self.db.add_word(self.source, self.target)
+        self.db.add_word(self.source, getattr(self, "_result", self._target_label.text()))
         self.save_btn.setText("已保存")
         self.save_btn.setEnabled(False)
 

@@ -78,23 +78,23 @@ def main():
 
     _popup_ref = []  # Keep popup references alive (prevent GC)
 
-    def show_popup(text: str, result: str):
+    def on_translate_requested(text: str):
+        if not text:
+            return
         from ui.popup import PopupWindow
-        popup = PopupWindow(text, result, db)
+        popup = PopupWindow(text, db)
         _popup_ref.clear()
         _popup_ref.append(popup)
         popup.show()
 
-    def on_translate_requested(text: str):
-        if not text:
-            return
-        try:
-            result = tray.translator.translate(text)
-        except Exception as e:
-            from PyQt6.QtWidgets import QSystemTrayIcon
-            tray.notify("翻译失败", str(e), QSystemTrayIcon.MessageIcon.Warning)
-            return
-        show_popup(text, result)
+        def _do_translate():
+            try:
+                result = tray.translator.translate(text)
+            except Exception as e:
+                result = f"翻译失败：{e}"
+            popup.result_ready.emit(result)
+
+        threading.Thread(target=_do_translate, daemon=True).start()
 
     sel_btn = SelectionButton(on_translate=on_translate_requested)
 
