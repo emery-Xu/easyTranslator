@@ -1,5 +1,5 @@
 deepl>=1.28.0
-keyboard>=0.13.5
+pynput>=1.7.6
 pyperclip>=1.11.0
 pyqt6>=6.10.2
 requests>=2.32.0

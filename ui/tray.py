@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QComboBox, QGroupBox, QVBoxLayout, QWidget,
 )
 from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 
 from config import Config
 from database import Database
@@ -84,6 +84,7 @@ class SettingsDialog(QDialog):
         self.config.save_config(self.cfg)
         # Re-initialize translator
         self.tray_icon.translator = create_translator(self.cfg)
+        self.tray_icon._update_tooltip()
         self.accept()
 
 
@@ -108,7 +109,7 @@ class TrayIcon(QSystemTrayIcon):
         self._settings_dialog = None
 
         self.setIcon(self._load_icon())
-        self.setToolTip("EasyTranslator")
+        self._update_tooltip()
 
         self._build_menu()
 
@@ -154,6 +155,20 @@ class TrayIcon(QSystemTrayIcon):
         self._flashcard_window.show()
         self._flashcard_window.raise_()
         self._flashcard_window.activateWindow()
+
+    def notify(self, title: str, msg: str, icon=QSystemTrayIcon.MessageIcon.Information):
+        """Show a tray balloon notification."""
+        if self.supportsMessages():
+            self.showMessage(title, msg, icon, 3000)
+
+    def _update_tooltip(self):
+        backend = self.cfg.get("backend", "deepl")
+        if backend == "deepl":
+            key = self.cfg.get("deepl_api_key", "")
+            status = "DeepL ✓" if key else "DeepL ⚠ 未配置 API Key"
+        else:
+            status = f"Ollama ({self.cfg.get('ollama_model', 'qwen2.5:7b')})"
+        self.setToolTip(f"EasyTranslator | {status}")
 
     def show_settings(self):
         dialog = SettingsDialog(self.cfg, self.config, self)

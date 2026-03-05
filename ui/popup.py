@@ -102,6 +102,11 @@ class PopupWindow(QWidget):
         self.save_btn.setText("已保存")
         self.save_btn.setEnabled(False)
 
+    def show(self):
+        super().show()
+        self.raise_()
+        self.activateWindow()
+
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:
             self.close()
