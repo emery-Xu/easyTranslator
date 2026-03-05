@@ -1,9 +1,13 @@
 from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout
-from PyQt6.QtCore import Qt, QTimer, QPoint
+from PyQt6.QtCore import Qt, QTimer, QPoint, pyqtSignal
 
 
 class SelectionButton(QWidget):
     """Small floating 'Translate' button that appears near the cursor after text selection."""
+
+    # Signal for cross-thread communication: (text, position)
+    # Emitted from background threads; connected to show_near_cursor on the main thread.
+    request_show = pyqtSignal(str, QPoint)
 
     def __init__(self, on_translate, parent=None):
         super().__init__(parent)
@@ -12,6 +16,7 @@ class SelectionButton(QWidget):
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self.hide)
+        self.request_show.connect(self.show_near_cursor)
         self._setup_ui()
 
     def _setup_ui(self):

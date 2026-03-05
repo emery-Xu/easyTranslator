@@ -139,7 +139,7 @@ def main():
             def _worker():
                 text = _get_selected_text_via_clipboard()
                 if text:
-                    QTimer.singleShot(0, lambda: sel_btn.show_near_cursor(text, QPoint(pos_x, pos_y)))
+                    sel_btn.request_show.emit(text, QPoint(pos_x, pos_y))
 
             threading.Thread(target=_worker, daemon=True).start()
 
