@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QFrame
-from PyQt6.QtCore import Qt, QPoint, pyqtSignal
+from PyQt6.QtCore import Qt, QPoint, QTimer, pyqtSignal
 from PyQt6.QtGui import QCursor
 
 from database import Database
@@ -111,6 +111,7 @@ class PopupWindow(QWidget):
         self.db.add_word(self.source, getattr(self, "_result", self._target_label.text()))
         self.save_btn.setText("已保存")
         self.save_btn.setEnabled(False)
+        self.close()
 
     def show(self):
         super().show()
