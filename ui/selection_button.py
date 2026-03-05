@@ -1,6 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout
 from PyQt6.QtCore import Qt, QTimer, QPoint
-from PyQt6.QtGui import QScreen, QCursor
 
 
 class SelectionButton(QWidget):
@@ -62,7 +61,7 @@ class SelectionButton(QWidget):
         y = pos.y() + 16
 
         # Keep within screen bounds
-        screen = QScreen.virtualSiblingAt(pos) or self.screen()
+        screen = self.screen()
         if screen:
             geo = screen.availableGeometry()
             x = min(x, geo.right() - self.width() - 4)
