@@ -1,0 +1,22 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Local data
+data/words.db
+
+# Sensitive config (copy from config.example.json)
+config.json
+
+# Documentation
+docs/
+
+# Claude local files
+.claude/

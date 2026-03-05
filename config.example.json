@@ -1,0 +1,8 @@
+{
+    "deepl_api_key": "your-deepl-api-key",
+    "hotkey": "ctrl+t",
+    "target_lang": "ZH",
+    "backend": "deepl",
+    "ollama_host": "http://localhost:11434",
+    "ollama_model": "qwen2.5:7b"
+}

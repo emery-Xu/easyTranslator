@@ -1,0 +1,13 @@
+[project]
+name = "easytranslator"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "deepl>=1.28.0",
+    "keyboard>=0.13.5",
+    "pyperclip>=1.11.0",
+    "pyqt6>=6.10.2",
+    "requests>=2.32.0",
+]
