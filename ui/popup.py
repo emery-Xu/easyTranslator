@@ -120,6 +120,11 @@ class PopupWindow(QWidget):
 
     def focusOutEvent(self, event):
         super().focusOutEvent(event)
+        # Don't close if focus moved to a child widget (e.g. the save button)
+        from PyQt6.QtWidgets import QApplication
+        focused = QApplication.focusWidget()
+        if focused and self.isAncestorOf(focused):
+            return
         self.close()
 
     def keyPressEvent(self, event):
