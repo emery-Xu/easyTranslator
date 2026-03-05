@@ -107,11 +107,15 @@ class TrayIcon(QSystemTrayIcon):
         self._wordbook_window = None
         self._flashcard_window = None
         self._settings_dialog = None
+        self._main_window = None
 
         self.setIcon(self._load_icon())
         self._update_tooltip()
 
         self._build_menu()
+
+        # Double-click tray icon to show main window
+        self.activated.connect(self._on_activated)
 
     def _load_icon(self) -> QIcon:
         icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", "icon.png")
@@ -169,6 +173,16 @@ class TrayIcon(QSystemTrayIcon):
         else:
             status = f"Ollama ({self.cfg.get('ollama_model', 'qwen2.5:7b')})"
         self.setToolTip(f"EasyTranslator | {status}")
+
+    def set_main_window(self, window):
+        self._main_window = window
+
+    def _on_activated(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+            if self._main_window:
+                self._main_window.show()
+                self._main_window.raise_()
+                self._main_window.activateWindow()
 
     def show_settings(self):
         dialog = SettingsDialog(self.cfg, self.config, self)

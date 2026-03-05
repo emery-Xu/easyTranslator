@@ -29,7 +29,7 @@ def _get_selected_text_via_clipboard() -> str:
     kb.release("c")
     kb.release(Key.ctrl)
 
-    time.sleep(0.08)  # Wait for clipboard to be populated
+    time.sleep(0.15)  # Wait for clipboard to be populated
 
     try:
         selected = pyperclip.paste()
@@ -62,12 +62,18 @@ def main():
     tray = TrayIcon(cfg, config, db, translator, app)
     tray.show()
 
-    # 5. Show startup notification (delayed so tray is fully visible first)
+    # 5. Create and show main window
+    from ui.main_window import MainWindow
+    main_window = MainWindow(tray)
+    tray.set_main_window(main_window)
+    main_window.show()
+
+    # 6. Show startup notification (delayed so tray is fully visible first)
     backend = cfg.get("backend", "deepl")
     backend_label = "DeepL" if backend == "deepl" else f"Ollama ({cfg.get('ollama_model', 'qwen2.5:7b')})"
     QTimer.singleShot(800, lambda: tray.notify("EasyTranslator 已启动", f"后端：{backend_label}"))
 
-    # 6. Setup SelectionButton
+    # 7. Setup SelectionButton
     from ui.selection_button import SelectionButton
 
     _popup_ref = []  # Keep popup references alive (prevent GC)
@@ -92,19 +98,42 @@ def main():
 
     sel_btn = SelectionButton(on_translate=on_translate_requested)
 
-    # 7. Setup pynput mouse listener in a background thread
-    # Detect left-button release → grab selected text → show SelectionButton
-    _mouse_btn_down = threading.Event()
+    # 8. Setup pynput mouse listener in a background thread
+    # Only trigger clipboard grab when mouse is dragged (not plain click)
+    _MIN_DRAG_DISTANCE = 5  # pixels
+    _press_pos = {}  # store press position: {thread_id: (x, y)}
+    _ignore_next_release = False  # flag to skip release after clicking SelectionButton
 
     def _on_mouse_click(x, y, button, pressed):
-        from pynput.mouse import Button
-        if button != Button.left:
+        nonlocal _ignore_next_release
+        from pynput.mouse import Button as MButton
+        if button != MButton.left:
             return
         if pressed:
-            _mouse_btn_down.set()
+            _press_pos["pos"] = (x, y)
         else:
-            # Left button released — attempt to grab selection
-            _mouse_btn_down.clear()
+            press = _press_pos.pop("pos", None)
+            if press is None:
+                return
+
+            # If we should ignore this release (e.g. after clicking SelectionButton)
+            if _ignore_next_release:
+                _ignore_next_release = False
+                return
+
+            # Check if the SelectionButton is visible and the click landed on it
+            if sel_btn.isVisible():
+                btn_geo = sel_btn.geometry()
+                if btn_geo.contains(x, y):
+                    _ignore_next_release = True
+                    return
+
+            # Only treat as drag-select if moved more than threshold
+            dx = x - press[0]
+            dy = y - press[1]
+            if (dx * dx + dy * dy) < _MIN_DRAG_DISTANCE * _MIN_DRAG_DISTANCE:
+                return
+
             pos_x, pos_y = x, y
 
             def _worker():
@@ -119,11 +148,11 @@ def main():
     mouse_listener.daemon = True
     mouse_listener.start()
 
-    # 8. If using DeepL with no API key, open settings immediately
+    # 9. If using DeepL with no API key, open settings immediately
     if cfg.get("backend", "deepl") == "deepl" and not cfg.get("deepl_api_key"):
         QTimer.singleShot(500, tray.show_settings)
 
-    # 9. Enter event loop
+    # 10. Enter event loop
     sys.exit(app.exec())
 
 

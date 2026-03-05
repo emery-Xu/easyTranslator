@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout
 from PyQt6.QtCore import Qt, QTimer, QPoint
-from PyQt6.QtGui import QScreen
+from PyQt6.QtGui import QScreen, QCursor
 
 
 class SelectionButton(QWidget):
@@ -12,7 +12,7 @@ class SelectionButton(QWidget):
         self._text = ""
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
-        self._timer.timeout.connect(self.close)
+        self._timer.timeout.connect(self.hide)
         self._setup_ui()
 
     def _setup_ui(self):
@@ -24,6 +24,7 @@ class SelectionButton(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setFixedSize(90, 28)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         self.setStyleSheet("""
             QWidget#sel_btn_container {
@@ -69,13 +70,14 @@ class SelectionButton(QWidget):
 
         self.move(QPoint(x, y))
         self.show()
+        self.raise_()
         self._timer.start(2500)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self._timer.stop()
             text = self._text
-            self.close()
+            self.hide()
             self._on_translate(text)
         else:
             super().mousePressEvent(event)
